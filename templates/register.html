@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GuardianVision – Register</title>
+
+<style>
+*{ box-sizing:border-box; }
+
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:radial-gradient(circle at top,#0a2a5e,#050b1f);
+  font-family:Segoe UI, Arial;
+}
+
+/* Card */
+.register-box{
+  background:#050b1f;
+  padding:40px;
+  width:420px;
+  border-radius:18px;
+  box-shadow:0 0 50px rgba(0,255,255,.3);
+  text-align:center;
+}
+
+h2{color:#00f2ff;margin-bottom:25px;}
+
+input,select{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  margin-bottom:14px;
+  font-size:16px;
+}
+
+button{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  background:#00f2ff;
+  font-size:17px;
+  cursor:pointer;
+  box-shadow:0 0 15px rgba(0,255,255,.6);
+}
+
+button:hover{background:#00d6e6;}
+
+label{color:white;font-size:14px;display:block;margin-bottom:15px;text-align:left;}
+
+.links{margin-top:15px;color:white;}
+.links a{color:#00f2ff;text-decoration:none}
+
+/* Modal */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.7);
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-content{
+  background:#020c2a;
+  padding:30px;
+  border-radius:15px;
+  text-align:center;
+  box-shadow:0 0 40px cyan;
+  color:white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="register-box">
+<h2>Create Parent Account</h2>
+
+<form id="regForm">
+  <input name="name" placeholder="Parent / Guardian Name" required>
+  <input name="email" type="email" placeholder="Email" required>
+  <input name="password" type="password" placeholder="Password" required>
+  <input name="child" placeholder="Child Name" required>
+  <input name="child_age" placeholder="Child Age" required>
+
+  <select name="relationship" required>
+    <option value="">Relationship to Child</option>
+    <option>Mother</option>
+    <option>Father</option>
+    <option>Guardian</option>
+  </select>
+
+  <label>
+    <input type="checkbox" name="consent" required>
+    I confirm I am the legal guardian of this child and consent to AI-based monitoring.
+  </label>
+
+  <button type="submit">Register</button>
+</form>
+
+<div class="links">
+Already have account? <a href="/login">Login</a>
+</div>
+
+{% if error %}
+<p style="color:red">{{error}}</p>
+{% endif %}
+
+</div>
+
+<!-- POPUP -->
+<div class="modal" id="popup">
+  <div class="modal-content">
+    <h2>📧 Verify Your Email</h2>
+    <p>We have sent a verification link to your email.</p>
+    <p>Please verify to continue.</p>
+    <br>
+    <button onclick="window.location='/login'">Go to Login</button>
+  </div>
+</div>
+
+<script>
+document.getElementById("regForm").onsubmit = async function(e){
+  e.preventDefault();
+
+  let formData = new FormData(this);
+
+  let res = await fetch("/register",{method:"POST", body:formData});
+  let text = await res.text();
+
+  if(text.includes("Verification")){
+    document.getElementById("popup").style.display="flex";
+  } else {
+    document.body.innerHTML = text;
+  }
+}
+</script>
+
+</body>
+</html>

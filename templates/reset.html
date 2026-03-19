@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Reset Password</title>
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI;
+  background:linear-gradient(120deg,#050b1f,#0a2a66);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+.box{
+  background:white;
+  padding:40px;
+  border-radius:12px;
+  width:350px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.3);
+  text-align:center;
+}
+input{
+  width:100%;
+  padding:10px;
+  margin:10px 0;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+button{
+  width:100%;
+  padding:10px;
+  background:#0a2a66;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+<div class="box">
+  <h2>Reset Password</h2>
+  <form method="post">
+    <input type="password" name="password" placeholder="New Password" required>
+    <button type="submit">Update Password</button>
+  </form>
+</div>
+</body>
+</html>

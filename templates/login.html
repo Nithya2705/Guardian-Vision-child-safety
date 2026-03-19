@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GuardianVision Login</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:radial-gradient(circle at top,#0a2a5e,#050b1f);
+  font-family:Segoe UI, Arial;
+}
+
+/* Main Card */
+.login-box{
+  background:#050b1f;
+  padding:40px;
+  width:380px;
+  border-radius:16px;
+  box-shadow:0 0 50px rgba(0,255,255,.25);
+  text-align:center;
+}
+
+/* Title */
+.login-box h2{
+  color:#00f2ff;
+  margin-bottom:25px;
+  font-size:26px;
+}
+
+/* Inputs */
+input{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  margin-bottom:16px;
+  font-size:16px;
+  outline:none;
+  display:block;
+}
+
+/* Button */
+button{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  background:#00f2ff;
+  font-size:17px;
+  cursor:pointer;
+  transition:.3s;
+  box-shadow:0 0 15px rgba(0,255,255,.6);
+}
+button:hover{
+  background:#00d6e6;
+  box-shadow:0 0 30px rgba(0,255,255,1);
+}
+
+/* Links */
+.links{
+  margin-top:20px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.links a{
+  color:#00f2ff;
+  text-decoration:none;
+  font-size:14px;
+  transition:.3s;
+}
+
+.links a:hover{
+  text-shadow:0 0 10px #00f2ff;
+  color:white;
+}
+
+/* Error */
+#error{
+  color:#ff5c5c;
+  margin-top:12px;
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-box">
+  <h2>GuardianVision</h2>
+
+  <input id="username" placeholder="Username or Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+
+  <div id="error"></div>
+
+  <div class="links">
+    <a href="/register">✨ New user? Register here</a>
+    <a href="/forgot">🔐 Forgot password?</a>
+  </div>
+</div>
+
+<script>
+function login(){
+  let u=document.getElementById("username").value;
+  let p=document.getElementById("password").value;
+  let err=document.getElementById("error");
+
+  fetch("/login",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:"username="+encodeURIComponent(u)+"&password="+encodeURIComponent(p)
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.success){
+      window.location="/";
+    }else{
+      err.style.display="block";
+      err.innerText="❌ Invalid username or password";
+    }
+  });
+}
+</script>
+
+</body>
+</html>

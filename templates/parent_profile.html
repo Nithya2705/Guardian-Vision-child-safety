@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Profile</title>
+</head>
+<body>
+
+<h2>👤 My Profile</h2>
+
+<p><b>Name:</b> {{ user[0] }}</p>
+<p><b>Email:</b> {{ user[1] }}</p>
+<p><b>Child Name:</b> {{ user[2] }}</p>
+<p><b>Status:</b> {{ user[3] }}</p>
+
+{% if user[3] != "approved" %}
+    <p style="color:red">⏳ Waiting for admin approval</p>
+{% else %}
+    <a href="/parent_ai">▶ Go to Live Monitoring</a>
+{% endif %}
+
+<br><br>
+<a href="/logout">Logout</a>
+
+</body>
+</html>

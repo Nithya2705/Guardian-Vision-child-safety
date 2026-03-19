@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Forgot Password – GuardianVision</title>
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI, Arial;
+  background:linear-gradient(135deg,#050b1f,#0a1f44);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  color:white;
+}
+
+.box{
+  background:#050b1f;
+  padding:40px;
+  width:400px;
+  border-radius:12px;
+  text-align:center;
+  box-shadow:0 0 30px rgba(0,255,255,0.15);
+}
+
+h2{color:#00f2ff;margin-bottom:10px;}
+p{color:#ccc;margin-bottom:20px;}
+
+input{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  margin-bottom:15px;
+  font-size:16px;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#00f2ff;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  cursor:pointer;
+}
+
+button:hover{background:#00c9d6;}
+
+.back{
+  display:block;
+  margin-top:15px;
+  color:#00f2ff;
+  text-decoration:none;
+  font-size:14px;
+}
+.back:hover{text-decoration:underline;}
+
+.msg{
+  margin-top:15px;
+  font-size:14px;
+  display:none;
+}
+.success{color:#00ff9c;}
+.error{color:#ff5c5c;}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>Forgot Password</h2>
+  <p>Enter your registered email</p>
+
+  <input type="email" id="email" placeholder="Enter your email" required>
+  <button onclick="sendLink()">Send Reset Link</button>
+
+  <div id="msg" class="msg"></div>
+
+  <a href="/login" class="back">⬅ Back to Login</a>
+</div>
+
+<script>
+function sendLink(){
+  let email = document.getElementById("email").value;
+  let msg = document.getElementById("msg");
+
+  fetch("/forgot",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:"email="+encodeURIComponent(email)
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    msg.style.display="block";
+    if(d.success){
+      msg.className="msg success";
+      msg.innerText="✅ Reset link sent to your email!";
+    }else{
+      msg.className="msg error";
+      msg.innerText="❌ Email not found!";
+    }
+  });
+}
+</script>
+
+</body>
+</html>

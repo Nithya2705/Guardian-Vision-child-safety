@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GuardianVision – Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{margin:0;font-family:Segoe UI;background:#eef2f8;}
+.app{display:grid;grid-template-columns:240px 1fr;grid-template-rows:60px 1fr;height:100vh;}
+.sidebar{grid-row:1/span 2;background:#050b1f;color:white;padding:20px;}
+.sidebar h2{color:#00f2ff;margin-bottom:30px;}
+.sidebar a{display:block;padding:12px;color:white;text-decoration:none;cursor:pointer;}
+.sidebar a:hover{color:#00f2ff;}
+.topbar{background:#0a1230;color:white;display:flex;justify-content:space-between;align-items:center;padding:0 20px;}
+.main{padding:20px;}
+.cards{display:flex;gap:20px;}
+.card{flex:1;background:white;padding:20px;border-radius:10px;text-align:center;}
+.page{display:none;}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<div class="sidebar">
+<h2>GuardianVision</h2>
+<a onclick="showPage('dashboard')">Dashboard</a>
+<a onclick="showPage('live')">Live Monitoring</a>
+<a onclick="showPage('alerts')">Alerts</a>
+<a onclick="showPage('reports')">Reports</a>
+<a href="/admin_parents">Parent Approvals</a>
+
+
+</div>
+
+<div class="topbar">
+<div>
+Camera:
+<select id="camera" onchange="reloadCamera()">
+<option value="cam1">CAM1</option>
+<option value="cam2">CAM2</option>
+<option value="cam3">CAM3</option>
+<option value="cam4">CAM4</option>
+</select>
+</div>
+<a href="/logout" style="color:#00f2ff">Logout</a>
+</div>
+
+<div class="main">
+
+<div id="dashboard" class="page" style="display:block">
+<div class="cards">
+<div class="card"><h3>Total Kids</h3><h1 id="total">0</h1></div>
+<div class="card"><h3>Safe Kids</h3><h1 id="safe">0</h1></div>
+<div class="card"><h3>Danger Kids</h3><h1 id="danger">0</h1></div>
+</div>
+</div>
+
+<div id="live" class="page">
+<img id="feed" width="100%">
+</div>
+
+<div id="alerts" class="page">
+<table width="100%" border="1">
+<tr><th>Time</th><th>Child</th><th>Event</th></tr>
+<tbody id="alertBody"></tbody>
+</table>
+</div>
+
+<div id="reports" class="page">
+<canvas id="chart"></canvas>
+</div>
+
+</div>
+</div>
+
+<script>
+let currentCamera="cam1", chart;
+
+function showPage(p){
+document.querySelectorAll(".page").forEach(x=>x.style.display="none");
+document.getElementById(p).style.display="block";
+}
+
+function reloadCamera(){
+currentCamera=document.getElementById("camera").value;
+document.getElementById("feed").src="/cctv?cam="+currentCamera+"&t="+Date.now();
+}
+
+document.getElementById("feed").src="/cctv?cam=cam1";
+
+function loadStats(){
+fetch("/stats?cam="+currentCamera).then(r=>r.json()).then(d=>{
+total.innerText=d.total;
+safe.innerText=d.safe;
+danger.innerText=d.danger;
+
+if(chart) chart.destroy();
+chart=new Chart(document.getElementById("chart"),{
+type:"doughnut",
+data:{labels:["Safe","Danger"],datasets:[{data:[d.safe,d.danger]}]}
+});
+});
+}
+
+function loadAlerts(){
+fetch("/alert_table?cam="+currentCamera).then(r=>r.json()).then(d=>{
+alertBody.innerHTML=d.data.map(a=>`<tr><td>${a.time}</td><td>${a.child}</td><td>${a.type}</td></tr>`).join("");
+});
+}
+
+setInterval(loadStats,2000);
+setInterval(loadAlerts,3000);
+loadStats(); loadAlerts();
+</script>
+
+</body>
+</html>

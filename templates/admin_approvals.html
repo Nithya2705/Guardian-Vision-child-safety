@@ -1,0 +1,22 @@
+<h2>Parent Approval Panel</h2>
+<table border="1" width="100%">
+<tr>
+<th>Name</th><th>Email</th><th>Child</th><th>Status</th><th>Action</th>
+</tr>
+
+{% for p in parents %}
+<tr>
+<td>{{p[1]}}</td>
+<td>{{p[2]}}</td>
+<td>{{p[3]}}</td>
+<td>{{p[4]}}</td>
+<td>
+{% if p[4]!="approved" %}
+<a href="/approve_parent/{{p[0]}}">Approve</a>
+{% else %}
+Approved
+{% endif %}
+</td>
+</tr>
+{% endfor %}
+</table>

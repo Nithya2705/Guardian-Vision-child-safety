@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GuardianVision – My Child AI</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI,Arial;
+  background:radial-gradient(circle at top,#0b1d4d,#020814);
+  color:white;
+}
+
+.app{
+  display:grid;
+  grid-template-columns:260px 1fr;
+  height:100vh;
+}
+
+/* Sidebar */
+.sidebar{
+  background:#020b1f;
+  padding:25px;
+  box-shadow:0 0 20px rgba(0,255,255,0.2);
+}
+.sidebar h2{
+  color:#00f2ff;
+  margin-bottom:40px;
+}
+.sidebar a{
+  display:block;
+  padding:14px;
+  color:white;
+  text-decoration:none;
+  border-radius:10px;
+  margin-bottom:10px;
+}
+.sidebar a:hover{
+  background:#00f2ff;
+  color:black;
+}
+
+/* Main */
+.main{
+  padding:25px;
+  overflow:auto;
+}
+
+/* Cards */
+.cards{
+  display:flex;
+  gap:20px;
+  margin-bottom:20px;
+}
+.card{
+  flex:1;
+  background:#020f2a;
+  padding:20px;
+  border-radius:15px;
+  box-shadow:0 0 20px rgba(0,255,255,0.15);
+  text-align:center;
+}
+.card h3{color:#00f2ff}
+
+/* Video */
+.videoBox{
+  background:#020f2a;
+  padding:15px;
+  border-radius:15px;
+  box-shadow:0 0 20px rgba(0,255,255,0.2);
+}
+video,img{
+  width:100%;
+  border-radius:10px;
+  border:2px solid #00f2ff;
+}
+
+/* Upload */
+.uploadBox{
+  margin-bottom:20px;
+}
+input[type=file]{
+  background:#001a3a;
+  color:white;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #00f2ff;
+}
+button{
+  background:#00f2ff;
+  border:none;
+  padding:12px 30px;
+  border-radius:30px;
+  cursor:pointer;
+  font-weight:bold;
+  margin-left:10px;
+}
+button:hover{
+  background:white;
+  color:black;
+}
+
+/* Alerts */
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:12px;
+  border-bottom:1px solid #00f2ff;
+}
+th{
+  color:#00f2ff;
+}
+
+.statusSafe{color:#00ff9c;font-weight:bold}
+.statusDanger{color:#ff4d4d;font-weight:bold}
+
+.page{display:none;}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>GuardianVision</h2>
+  <a onclick="show('dashboard')">🏠 Dashboard</a>
+  <a onclick="show('monitor')">📹 Live Monitoring</a>
+  <a onclick="show('alerts')">⚠ Alerts</a>
+  <a href="/logout">🚪 Logout</a>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page" style="display:block;">
+  <div class="cards">
+    <div class="card">
+      <h3>👶 Child Status</h3>
+      <h1 id="status" class="statusSafe">Safe</h1>
+    </div>
+    <div class="card">
+      <h3>⏰ Last Update</h3>
+      <h1 id="time">--:--</h1>
+    </div>
+  </div>
+</div>
+
+<!-- MONITOR -->
+<div id="monitor" class="page">
+  <div class="uploadBox">
+    <input type="file" id="video">
+    <button onclick="upload()">Upload Video</button>
+    <span id="msg"></span>
+  </div>
+
+  <div class="videoBox">
+    <h3>Live AI Monitoring</h3>
+    <img id="feed">
+  </div>
+</div>
+
+<!-- ALERTS -->
+<div id="alerts" class="page">
+  <div class="videoBox">
+    <h3>⚠ Danger Alerts</h3>
+    <table>
+      <thead>
+        <tr><th>Time</th><th>Status</th></tr>
+      </thead>
+      <tbody id="alertTable"></tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+function show(p){
+  document.querySelectorAll(".page").forEach(x=>x.style.display="none");
+  document.getElementById(p).style.display="block";
+}
+
+document.getElementById("feed").src="/parent_ai_feed";
+
+function upload(){
+  let f=document.getElementById("video").files[0];
+  if(!f){alert("Select video");return;}
+
+  let fd=new FormData();
+  fd.append("video",f);
+
+  fetch("/parent_ai_upload",{method:"POST",body:fd})
+  .then(()=>{ 
+    document.getElementById("msg").innerText="Video uploaded! AI started...";
+    document.getElementById("feed").src="/parent_ai_feed?"+new Date().getTime();
+  });
+}
+
+setInterval(()=>{
+  let now=new Date();
+  document.getElementById("time").innerText=now.toLocaleTimeString();
+},1000);
+</script>
+
+</body>
+</html>

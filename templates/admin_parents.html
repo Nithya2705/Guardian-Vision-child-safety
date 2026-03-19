@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Parent Approvals</title>
+
+<style>
+body{
+  font-family:Segoe UI;
+  background:#eef2f8;
+  padding:30px;
+}
+
+h2{
+  margin-bottom:15px;
+}
+
+.section{
+  margin-bottom:40px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+
+th,td{
+  padding:12px;
+  border-bottom:1px solid #ddd;
+  text-align:left;
+}
+
+th{
+  background:#0a1230;
+  color:white;
+}
+
+.pending{color:orange;font-weight:bold;}
+.approved{color:green;font-weight:bold;}
+.rejected{color:red;font-weight:bold;}
+
+button{
+  padding:6px 12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.approveBtn{
+  background:#00c853;
+  color:white;
+}
+
+.rejectBtn{
+  background:#d32f2f;
+  color:white;
+}
+
+.deleteBtn{
+  background:#555;
+  color:white;
+}
+
+input{
+  padding:6px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+</style>
+</head>
+
+<body>
+
+<h2>👨‍👩‍👧 Parent Account Approvals</h2>
+
+{% if msg == "approved" %}
+<script>alert("✅ Parent account approved and email sent");</script>
+{% endif %}
+
+{% if msg == "rejected" %}
+<script>alert("❌ Parent rejected and email sent");</script>
+{% endif %}
+
+<!-- ================= PENDING ================= -->
+<div class="section">
+<h3>🟡 New Requests</h3>
+<table>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Child</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+
+{% for p in pending %}
+<tr>
+<td>{{p[1]}}</td>
+<td>{{p[2]}}</td>
+<td>{{p[3]}}</td>
+<td class="pending">Pending</td>
+<td>
+  <a href="/approve/{{p[0]}}">
+    <button class="approveBtn" onclick="return confirm('Approve this parent?')">Approve</button>
+  </a>
+
+  <form action="/reject/{{p[0]}}" method="post" style="display:inline;">
+    <input name="reason" placeholder="Rejection reason" required>
+    <button class="rejectBtn" onclick="return confirm('Reject this parent?')">Reject</button>
+  </form>
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= APPROVED ================= -->
+<div class="section">
+<h3>🟢 Approved Parents</h3>
+<table>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Child</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+
+{% for p in approved %}
+<tr>
+<td>{{p[1]}}</td>
+<td>{{p[2]}}</td>
+<td>{{p[3]}}</td>
+<td class="approved">Approved</td>
+<td>
+  <a href="/delete_user/{{p[0]}}" onclick="return confirm('Delete this approved account?')">
+    <button class="deleteBtn">🗑 Delete</button>
+  </a>
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- ================= REJECTED ================= -->
+<div class="section">
+<h3>🔴 Rejected Parents</h3>
+<table>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Child</th>
+<th>Reason</th>
+<th>Action</th>
+</tr>
+
+{% for p in rejected %}
+<tr>
+<td>{{p[1]}}</td>
+<td>{{p[2]}}</td>
+<td>{{p[3]}}</td>
+<td class="rejected">{{p[10]}}</td>
+<td>
+  <a href="/delete_user/{{p[0]}}" onclick="return confirm('Delete this rejected account?')">
+    <button class="deleteBtn">🗑 Delete</button>
+  </a>
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<br>
+<a href="/">⬅ Back to Admin Dashboard</a>
+
+</body>
+</html>
