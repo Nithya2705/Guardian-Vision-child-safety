@@ -4,6 +4,7 @@ import uuid
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 app = Flask(__name__)
@@ -23,10 +24,10 @@ USERS = {
 
 # ================= EMAIL =================
 SENDER_EMAIL = "nithyashreemohan27@gmail.com"
-APP_PASSWORD = "ipwptthvoractsvd"
+APP_PASSWORD = "pymdcwsezohrcdbl"
 GUARDIAN_EMAIL = "nithuchennai.m@gmail.com"
 last_mail = {}
-
+parent_last_mail = {}
 # ================= AI =================
 model = YOLO("yolov8m.pt")
 
@@ -244,6 +245,11 @@ def parent_ai_feed():
     return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 def send_parent_alert(email):
+    # ✅ prevent spam
+    if email in parent_last_mail:
+        return
+    parent_last_mail[email] = True
+
     msg = MIMEText("Your child is in a danger zone.")
     msg["Subject"] = "GuardianVision Alert"
     msg["From"] = SENDER_EMAIL
@@ -256,7 +262,6 @@ def send_parent_alert(email):
         server.quit()
     except:
         pass
-
 
 
 @app.route("/parent_upload",methods=["POST"])
@@ -361,36 +366,33 @@ def alert_table():
 @app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "POST":
-
-        # ✅ Get form values FIRST
-        name = request.form["name"]
-        email = request.form["email"]          # <-- FIXED
-        password = request.form["password"]
-        child = request.form["child"]
-        age = request.form["child_age"]
-        relation = request.form["relationship"]
-        consent = request.form.get("consent")
-
-        if not consent:
-            return render_template("register.html", error="Consent is required")
-
-        # ✅ Now domain check (email already exists)
-        domain = email.split("@")[1]
-
-        db = get_db()
-        cur = db.cursor()
-
-        cur.execute("""
-            SELECT COUNT(*) FROM users
-            WHERE email LIKE ? AND status='pending'
-        """, (f"%@{domain}",))
-
-        if cur.fetchone()[0] >= 3:
-            db.close()
-            return "❌ Too many pending accounts from this email domain today"
-
         try:
-            # ✅ Insert new parent
+            name = request.form["name"]
+            email = request.form["email"]
+            password = request.form["password"]
+            child = request.form["child"]
+            age = request.form["child_age"]
+            relation = request.form["relationship"]
+            consent = request.form.get("consent")
+
+            if not consent:
+                return render_template("register.html", error="Consent is required")
+
+            domain = email.split("@")[1]
+
+            db = get_db()
+            cur = db.cursor()
+
+            cur.execute("""
+                SELECT COUNT(*) FROM users
+                WHERE email LIKE ? AND status='pending'
+            """, (f"%@{domain}",))
+
+            if cur.fetchone()[0] >= 3:
+                db.close()
+                return "❌ Too many pending accounts from this email domain today"
+
+            # ✅ Insert user
             cur.execute("""
                 INSERT INTO users
                 (name,email,password,child_name,child_age,relationship,consent,status,email_verified)
@@ -403,40 +405,55 @@ def register():
 
             db.commit()
 
-            # ---------------- SEND VERIFICATION EMAIL ----------------
+            # ✅ Token save
             token = str(uuid.uuid4())
-            verify_tokens[token] = email
+            cur.execute("UPDATE users SET verify_token=? WHERE email=?", (token, email))
+            db.commit()
 
             verify_link = f"http://127.0.0.1:5000/verify/{token}"
-
-            msg = MIMEText(f"""
-GuardianVision Email Verification
-
-Hello {name},
-
-Click below to verify your email:
-{verify_link}
-
-You must verify before admin approval.
-""")
-
+            msg = MIMEMultipart("alternative")
             msg["Subject"] = "Verify your GuardianVision Email"
             msg["From"] = SENDER_EMAIL
             msg["To"] = email
-
-            server = smtplib.SMTP_SSL("smtp.gmail.com",465)
-            server.login(SENDER_EMAIL,APP_PASSWORD)
-            server.send_message(msg)
-            server.quit()
-
-            db.close()
-            return render_template("login.html",
-                success="📧 Verification email sent. Check your inbox.")
+            verify_link = f"http://127.0.0.1:5000/verify/{token}"
+            html = f"""
+            <html>
+            <body>
+            <h2>GuardianVision Email Verification</h2>
+            <p>Hello {name},</p>
+            <p>Click below to verify your email:</p>
+            <a href="{verify_link}" 
+            style="background:#00bcd4;color:white;padding:10px 20px;text-decoration:none;">
+            Verify Email
+            </a>
+            <p>Or copy this link:</p>
+            <p>{verify_link}</p>
+            </body>
+            </html>
+            """ 
+            part = MIMEText(html, "html")
+            msg.attach(part)
+            print("📨 Sending verification to:", email)
+            try:
+                server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+                server.login(SENDER_EMAIL, APP_PASSWORD)
+                server.sendmail(SENDER_EMAIL, email, msg.as_string())  # ✅ IMPORTANT
+                server.quit()
+                print("✅ Verification mail sent")
+            except Exception as e:
+                print("❌ EMAIL ERROR:", e)
+                db.close()
+                return render_template("login.html",
+                success="📧 Verification email sent")
 
         except sqlite3.IntegrityError:
-            db.close()
             return render_template("register.html", error="Email already registered!")
 
+        except Exception as e:   # 🔥 THIS FIXES YOUR ERROR
+            print("REGISTER ERROR:", e)
+            return render_template("register.html", error="Something went wrong")
+
+    # ✅ ALWAYS REQUIRED
     return render_template("register.html")
 
 @app.route("/verify/<token>")
@@ -724,7 +741,7 @@ def login():
 import uuid
 
 reset_tokens = {}  # temporary memory store
-verify_tokens = {}
+
 @app.route("/forgot", methods=["GET","POST"])
 def forgot():
     if request.method == "POST":
