@@ -1,61 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Parent Approvals</title>
+<title>GuardianVision – Parent Approvals</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
 body{
-  font-family:Segoe UI;
-  background:#eef2f8;
+  margin:0;
+  font-family:'Poppins',sans-serif;
+  background:#0b1023;
+  color:white;
   padding:30px;
 }
 
+/* TITLE */
 h2{
-  margin-bottom:15px;
+  color:#00f2ff;
+  margin-bottom:20px;
 }
 
+/* SECTION */
 .section{
   margin-bottom:40px;
 }
 
+.section h3{
+  margin-bottom:10px;
+}
+
+/* CARD */
+.card{
+  background:rgba(255,255,255,0.05);
+  padding:20px;
+  border-radius:15px;
+  backdrop-filter:blur(10px);
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+/* TABLE */
 table{
   width:100%;
   border-collapse:collapse;
-  background:white;
-  box-shadow:0 4px 10px rgba(0,0,0,0.05);
-}
-
-th,td{
-  padding:12px;
-  border-bottom:1px solid #ddd;
-  text-align:left;
 }
 
 th{
-  background:#0a1230;
-  color:white;
+  background:#121933;
+  color:#00f2ff;
+  padding:12px;
 }
 
+td{
+  padding:12px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+/* STATUS */
 .pending{color:orange;font-weight:bold;}
-.approved{color:green;font-weight:bold;}
+.approved{color:#00ff9f;font-weight:bold;}
 .rejected{color:red;font-weight:bold;}
 
+/* BUTTONS */
 button{
   padding:6px 12px;
   border:none;
-  border-radius:6px;
+  border-radius:8px;
   cursor:pointer;
-  font-weight:bold;
+  font-size:12px;
+  font-weight:600;
+  transition:0.3s;
 }
 
 .approveBtn{
-  background:#00c853;
-  color:white;
+  background:#00ff9f;
+  color:black;
+}
+
+.approveBtn:hover{
+  transform:scale(1.05);
 }
 
 .rejectBtn{
-  background:#d32f2f;
+  background:#ff4d4d;
   color:white;
+}
+
+.rejectBtn:hover{
+  transform:scale(1.05);
 }
 
 .deleteBtn{
@@ -63,10 +94,25 @@ button{
   color:white;
 }
 
+.deleteBtn:hover{
+  transform:scale(1.05);
+}
+
+/* INPUT */
 input{
   padding:6px;
   border-radius:6px;
-  border:1px solid #ccc;
+  border:none;
+  outline:none;
+}
+
+/* BACK */
+.back{
+  margin-top:20px;
+  display:inline-block;
+  color:#00f2ff;
+  text-decoration:none;
+  font-weight:500;
 }
 </style>
 </head>
@@ -74,6 +120,13 @@ input{
 <body>
 
 <h2>👨‍👩‍👧 Parent Account Approvals</h2>
+<input type="text" id="searchInput" placeholder="🔍 Search parent..."
+style="
+padding:10px;
+border-radius:10px;
+border:none;
+width:250px;
+margin-bottom:20px;">
 
 {% if msg == "approved" %}
 <script>alert("✅ Parent account approved and email sent");</script>
@@ -83,9 +136,60 @@ input{
 <script>alert("❌ Parent rejected and email sent");</script>
 {% endif %}
 
+<!-- TOAST -->
+<div id="toast" style="
+position:fixed;
+top:20px;
+right:20px;
+background:#121933;
+color:white;
+padding:15px 20px;
+border-radius:10px;
+display:none;
+box-shadow:0 10px 30px rgba(0,0,0,0.5);
+z-index:999;">
+</div>
+
+<!-- MODAL -->
+<div id="modal" style="
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.6);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:999;">
+
+<div style="
+background:#121933;
+padding:25px;
+border-radius:15px;
+text-align:center;
+width:300px;">
+
+<p id="modalText">Are you sure?</p>
+
+<button onclick="confirmAction()" style="
+background:#00ff9f;
+padding:8px 15px;
+border:none;
+border-radius:8px;
+margin-right:10px;">Yes</button>
+
+<button onclick="closeModal()" style="
+background:#ff4d4d;
+padding:8px 15px;
+border:none;
+border-radius:8px;">Cancel</button>
+
+</div>
+</div>
 <!-- ================= PENDING ================= -->
 <div class="section">
 <h3>🟡 New Requests</h3>
+
+<div class="card">
 <table>
 <tr>
 <th>Name</th>
@@ -103,11 +207,11 @@ input{
 <td class="pending">Pending</td>
 <td>
   <a href="/approve/{{p[0]}}">
-    <button class="approveBtn" onclick="return confirm('Approve this parent?')">Approve</button>
+    <button class="approveBtn"onclick="openModal('approve', {{p[0]}})"">Approve</button>
   </a>
 
   <form action="/reject/{{p[0]}}" method="post" style="display:inline;">
-    <input name="reason" placeholder="Rejection reason" required>
+    <input name="reason" placeholder="Reason" required>
     <button class="rejectBtn" onclick="return confirm('Reject this parent?')">Reject</button>
   </form>
 </td>
@@ -115,10 +219,13 @@ input{
 {% endfor %}
 </table>
 </div>
+</div>
 
 <!-- ================= APPROVED ================= -->
 <div class="section">
 <h3>🟢 Approved Parents</h3>
+
+<div class="card">
 <table>
 <tr>
 <th>Name</th>
@@ -143,10 +250,13 @@ input{
 {% endfor %}
 </table>
 </div>
+</div>
 
 <!-- ================= REJECTED ================= -->
 <div class="section">
 <h3>🔴 Rejected Parents</h3>
+
+<div class="card">
 <table>
 <tr>
 <th>Name</th>
@@ -171,9 +281,68 @@ input{
 {% endfor %}
 </table>
 </div>
+</div>
 
-<br>
-<a href="/">⬅ Back to Admin Dashboard</a>
+<a href="{{ url_for('dashboard') }}" class="back">← Back to Dashboard</a>
+<script>
+let actionType = "";
+let actionId = "";
 
+/* MODAL */
+function openModal(type,id){
+    actionType = type;
+    actionId = id;
+
+    document.getElementById("modalText").innerText =
+        "Are you sure you want to " + type + "?";
+
+    document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal(){
+    document.getElementById("modal").style.display = "none";
+}
+
+/* CONFIRM ACTION */
+function confirmAction(){
+    if(actionType === "approve"){
+        window.location = "/approve/" + actionId;
+    }
+    else if(actionType === "delete"){
+        window.location = "/delete_user/" + actionId;
+    }
+}
+
+/* TOAST */
+function showToast(msg){
+    let t = document.getElementById("toast");
+    t.innerText = msg;
+    t.style.display = "block";
+
+    setTimeout(()=>t.style.display="none",3000);
+}
+
+/* AUTO TOAST FROM BACKEND */
+{% if msg == "approved" %}
+showToast("✅ Parent approved successfully");
+{% endif %}
+
+{% if msg == "rejected" %}
+showToast("❌ Parent rejected");
+{% endif %}
+
+/* SEARCH FILTER */
+document.getElementById("searchInput").addEventListener("input",function(){
+    let val = this.value.toLowerCase();
+
+    document.querySelectorAll("table tr").forEach((row,i)=>{
+        if(i === 0) return;
+
+        row.style.display = row.innerText.toLowerCase().includes(val)
+            ? ""
+            : "none";
+    });
+});
+</script>
 </body>
 </html>

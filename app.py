@@ -1,11 +1,13 @@
 from flask import Flask, render_template, Response, redirect, request, session, jsonify
 import cv2, os, math, sqlite3, smtplib,secrets
 import uuid
+import requests
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from flask import session
 
 app = Flask(__name__)
 app.secret_key = "guardianvision"
@@ -36,7 +38,10 @@ CAMERA_FOLDERS = {
     "cam1":"videos/cam1",
     "cam2":"videos/cam2",
     "cam3":"videos/cam3",
-    "cam4":"videos/cam4"
+    "cam4":"videos/cam4",
+    "cam5":"videos/cam5",
+    "cam6":"videos/cam6",
+    "cam7":"videos/cam7"
 }
 
 trackers = {cam: DeepSort(max_age=30) for cam in CAMERA_FOLDERS}
@@ -81,14 +86,39 @@ Time: {datetime.now().strftime('%H:%M:%S')}
         server.quit()
     except Exception as e:
         print("Email error:",e)
+def send_whatsapp_alert(msg):
+    url = "https://api.callmebot.com/whatsapp.php"
+    params = {
+        "phone": "YOUR_NUMBER",     # ⚠ replace with your number
+        "text": msg,
+        "apikey": "YOUR_API_KEY"    # ⚠ get from callmebot
+    }
+    try:
+        requests.get(url, params=params)
+    except:
+        pass
 
 # ================= FRAME =================
 def get_frame(cam):
-    files=sorted(os.listdir(CAMERA_FOLDERS[cam]))
-    if not files: return None
-    idx=frame_index[cam]
-    frame=cv2.imread(os.path.join(CAMERA_FOLDERS[cam],files[idx]))
-    frame_index[cam]=(idx+1)%len(files)
+    files = sorted(os.listdir(CAMERA_FOLDERS[cam]))
+
+    # filter only images
+    files = [f for f in files if f.endswith(('.jpg', '.png'))]
+
+    if not files:
+        print(f"❌ No frames in {cam}")
+        return None
+
+    idx = frame_index[cam]
+    path = os.path.join(CAMERA_FOLDERS[cam], files[idx])
+
+    frame = cv2.imread(path)
+
+    if frame is None:
+        print(f"❌ Failed to read: {path}")
+        return None
+
+    frame_index[cam] = (idx + 1) % len(files)
     return frame
 
 # ================= PROCESS =================
@@ -103,9 +133,10 @@ def process_frame(frame, cam):
     results=model(frame)[0]
     detections=[]
     for b in results.boxes:
-        if int(b.cls[0])==0:
-            x1,y1,x2,y2=map(int,b.xyxy[0])
-            detections.append(([x1,y1,x2-x1,y2-y1],1.0,"child"))
+        if int(b.cls[0]) == 0:  # person
+            x1, y1, x2, y2 = map(int, b.xyxy[0])
+            conf = float(b.conf[0])   # ✅ confidence score
+            detections.append(([x1, y1, x2-x1, y2-y1], conf, "child"))
 
     tracks=trackers[cam].update_tracks(detections,frame=frame)
 
@@ -125,11 +156,15 @@ def process_frame(frame, cam):
             danger+=1
             alert_log[cam].append({"time":datetime.now().strftime("%H:%M:%S"),"child":ui,"type":"Danger"})
             send_alert(cam,ui,"Danger")
+            send_whatsapp_alert(f"⚠ Child {ui} in Danger at {cam}")
         else:
             safe+=1
 
         cv2.rectangle(frame,(l,tb),(l+w2,tb+h2),color,2)
-        cv2.putText(frame,f"Child {ui}",(l,tb-10),cv2.FONT_HERSHEY_SIMPLEX,0.6,color,2)
+        conf_text = f"{conf:.2f}"
+        cv2.putText(frame, f"Child {ui} ({conf_text})",
+            (l, tb-10),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
     stats[cam]={"total":total,"safe":safe,"danger":danger}
     return frame
@@ -282,7 +317,6 @@ def parent_upload():
 
     return "OK"
 
-
 @app.route("/parent_video")
 def parent_video():
     if session.get("role")!="parent": return "Unauthorized",403
@@ -320,8 +354,6 @@ def parent_profile():
 
     return render_template("parent_profile.html", user=user)
 
-
-
 @app.route("/admin_parents")
 def admin_parents():
     if session.get("role") != "admin":
@@ -350,8 +382,6 @@ def admin_parents():
 
 
 
-
-
 # ================= API =================
 @app.route("/stats")
 def stats_api():
@@ -362,10 +392,13 @@ def alert_table():
     cam=request.args.get("cam","cam1")
     return jsonify({"data":alert_log[cam][-50:]})
 
+
 # ================= AUTH =================
 @app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "POST":
+        print("FORM:", request.form)
+        print("FILES:", request.files)
         try:
             name = request.form["name"]
             email = request.form["email"]
@@ -374,188 +407,99 @@ def register():
             age = request.form["child_age"]
             relation = request.form["relationship"]
             consent = request.form.get("consent")
+            if consent != "on":
+                return "CONSENT_REQUIRED"
 
-            if not consent:
-                return render_template("register.html", error="Consent is required")
-
-            domain = email.split("@")[1]
-
+            file = request.files.get("face")
+            if not file or file.filename == "":
+                return "ERROR"   # no file uploaded
+            folder = "static/faces"
+            os.makedirs(folder, exist_ok=True)
+            filename = str(uuid.uuid4()) + "_" + file.filename
+            path = os.path.join(folder, filename)
+            file.save(path)
+            
             db = get_db()
             cur = db.cursor()
 
-            cur.execute("""
-                SELECT COUNT(*) FROM users
-                WHERE email LIKE ? AND status='pending'
-            """, (f"%@{domain}",))
-
-            if cur.fetchone()[0] >= 3:
+            # ❌ prevent duplicate
+            cur.execute("SELECT * FROM users WHERE email=?", (email,))
+            if cur.fetchone():
                 db.close()
-                return "❌ Too many pending accounts from this email domain today"
+                return "EMAIL_EXISTS"
 
-            # ✅ Insert user
+            # 🔐 generate token
+            token = str(uuid.uuid4())
+
+            # ✅ insert user (not verified yet)
             cur.execute("""
                 INSERT INTO users
-                (name,email,password,child_name,child_age,relationship,consent,status,email_verified)
-                VALUES (?,?,?,?,?,?,?,?,?)
+                (name,email,password,child_name,child_age,relationship,consent,status,email_verified,verify_token)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
             """, (
                 name, email, password, child,
                 age, relation, 1,
-                "pending", "no"
+                "pending", "no", token
             ))
 
             db.commit()
 
-            # ✅ Token save
-            token = str(uuid.uuid4())
-            cur.execute("UPDATE users SET verify_token=? WHERE email=?", (token, email))
-            db.commit()
-
+            # 📧 send mail
             verify_link = f"http://127.0.0.1:5000/verify/{token}"
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = "Verify your GuardianVision Email"
-            msg["From"] = SENDER_EMAIL
-            msg["To"] = email
-            verify_link = f"http://127.0.0.1:5000/verify/{token}"
-            html = f"""
-            <html>
-            <body>
-            <h2>GuardianVision Email Verification</h2>
-            <p>Hello {name},</p>
-            <p>Click below to verify your email:</p>
-            <a href="{verify_link}" 
-            style="background:#00bcd4;color:white;padding:10px 20px;text-decoration:none;">
-            Verify Email
-            </a>
-            <p>Or copy this link:</p>
-            <p>{verify_link}</p>
-            </body>
-            </html>
-            """ 
-            part = MIMEText(html, "html")
-            msg.attach(part)
-            print("📨 Sending verification to:", email)
-            try:
-                server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-                server.login(SENDER_EMAIL, APP_PASSWORD)
-                server.sendmail(SENDER_EMAIL, email, msg.as_string())  # ✅ IMPORTANT
-                server.quit()
-                print("✅ Verification mail sent")
-            except Exception as e:
-                print("❌ EMAIL ERROR:", e)
-                db.close()
-                return render_template("login.html",
-                success="📧 Verification email sent")
 
-        except sqlite3.IntegrityError:
-            return render_template("register.html", error="Email already registered!")
+            msg = f"""Subject: GuardianVision Email Verification
 
-        except Exception as e:   # 🔥 THIS FIXES YOUR ERROR
-            print("REGISTER ERROR:", e)
-            return render_template("register.html", error="Something went wrong")
+Hello {name},
 
-    # ✅ ALWAYS REQUIRED
+Click the link below to verify your account:
+
+{verify_link}
+
+If you did not request this, ignore.
+"""
+
+            server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+            server.login(SENDER_EMAIL, APP_PASSWORD)
+            server.sendmail(SENDER_EMAIL, email, msg)
+            server.quit()
+
+            db.close()
+
+            return "REGISTER_SUCCESS"
+
+        except Exception as e:
+            import traceback
+            print("REGISTER ERROR:")
+            traceback.print_exc()
+            return "ERROR"
     return render_template("register.html")
 
 @app.route("/verify/<token>")
-def verify(token):
+def verify_email(token):
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("SELECT email FROM users WHERE verify_token=?", (token,))
-    row = cur.fetchone()
-
-    if not row:
-        db.close()
-        return """
-        <h2>❌ Verification link expired</h2>
-        <p>This link is no longer valid.</p>
-        <form action="/resend_verify_page" method="POST">
-            <input name="email" placeholder="Enter your registered email" required>
-            <button type="submit">Resend Verification</button>
-        </form>
-        """
-
-    email = row[0]
-
-    cur.execute("""
-    UPDATE users 
-    SET email_verified='yes', verify_token=NULL
-    WHERE email=?
-    """, (email,))
-    db.commit()
-    db.close()
-
-    return "✅ Email verified successfully! You can now wait for admin approval."
-
-@app.route("/resend_verify/<email>")
-def resend_verify(email):
-    token = str(uuid.uuid4())
-
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("UPDATE users SET verify_token=? WHERE email=?", (token, email))
-    db.commit()
-    db.close()
-
-    link = f"http://127.0.0.1:5000/verify/{token}"
-
-    msg = MIMEText(f"""
-GuardianVision Email Verification
-
-Your new verification link:
-{link}
-
-Please verify your email to continue.
-""")
-
-    msg["Subject"] = "GuardianVision – New Verification Link"
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = email
-
-    server = smtplib.SMTP_SSL("smtp.gmail.com",465)
-    server.login(SENDER_EMAIL, APP_PASSWORD)
-    server.send_message(msg)
-    server.quit()
-
-    return "📧 New verification link sent. Please check your email."
-
-@app.route("/resend_verify_page", methods=["POST"])
-def resend_verify_page():
-    email = request.form["email"]
-
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("SELECT id FROM users WHERE email=?", (email,))
+    cur.execute("SELECT * FROM users WHERE verify_token=?", (token,))
     user = cur.fetchone()
 
-    if not user:
+    if user:
+        cur.execute("""
+            UPDATE users
+            SET email_verified='yes'
+            WHERE verify_token=?
+        """, (token,))
+        db.commit()
         db.close()
-        return "❌ Email not found"
 
-    token = str(uuid.uuid4())
-    cur.execute("UPDATE users SET verify_token=? WHERE email=?", (token, email))
-    db.commit()
-    db.close()
+        return """
+        <h2 style='color:green;text-align:center;margin-top:100px;'>
+        ✅ Email Verified Successfully!<br><br>
+        <a href='/login'>Go to Login</a>
+        </h2>
+        """
 
-    link = f"http://127.0.0.1:5000/verify/{token}"
+    return "❌ Invalid or expired link"
 
-    msg = MIMEText(f"""
-GuardianVision Email Verification
-
-Click below to verify your email:
-{link}
-""")
-
-    msg["Subject"] = "GuardianVision – New Verification Link"
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = email
-
-    server = smtplib.SMTP_SSL("smtp.gmail.com",465)
-    server.login(SENDER_EMAIL, APP_PASSWORD)
-    server.send_message(msg)
-    server.quit()
-
-    return "📧 New verification email sent. Check inbox."
 @app.route("/approve/<int:uid>")
 def approve(uid):
     if session.get("role") != "admin":
@@ -686,9 +630,10 @@ def login():
         if u in USERS and USERS[u]["password"] == p:
             session["user"] = u
             session["role"] = USERS[u]["role"]
+
             return jsonify({
                 "success": True,
-                "redirect": "/"
+                "redirect": "/dashboard"
             })
 
         # ---------- PARENT ----------
@@ -699,24 +644,20 @@ def login():
             "SELECT name, email, status, email_verified FROM users WHERE email=? AND password=?",
             (u, p)
         )
-        row = cur.fetchone()   # 🔥 THIS LINE WAS MISSING
-
+        row = cur.fetchone()
         db.close()
 
-        # If user exists
         if row:
-            # Email verification check
             if row[3] != "yes":
                 return jsonify({
                     "success": False,
-                    "message": "❌ Please verify your email first"
+                    "message": "Verify email first"
                 })
 
             session["user"] = row[0]
             session["email"] = row[1]
             session["role"] = "parent"
 
-            # redirect based on approval
             if row[2] == "approved":
                 return jsonify({
                     "success": True,
@@ -728,13 +669,11 @@ def login():
                     "redirect": "/parent_profile"
                 })
 
-        # ❌ If no user found
         return jsonify({
             "success": False,
-            "message": "❌ Invalid username or password"
+            "message": "Invalid username or password"
         })
 
-    # ---------- GET ----------
     return render_template("login.html")
 
 
@@ -782,6 +721,29 @@ If you did not request this, ignore.
         return jsonify({"success":True})
 
     return render_template("forgot.html")
+@app.route("/")
+def home():
+    return render_template("home.html")
+
+@app.route("/dashboard")
+def dashboard():
+    if "user" not in session:
+        return redirect("/login")
+
+    role = session.get("role")
+
+    if role == "admin":
+        return render_template("index.html")
+
+    elif role == "security":
+        return render_template("security.html")
+
+    elif role == "parent":
+        return redirect("/parent_ai")
+
+    # fallback
+    return redirect("/login")
+
 @app.route("/reset/<token>", methods=["GET","POST"])
 def reset(token):
     if token not in reset_tokens:
@@ -807,14 +769,4 @@ def logout():
     session.clear()
     return redirect("/login")
 
-@app.route("/")
-def index():
-    if "user" not in session:
-        return redirect("/login")
-    if session["role"]=="admin":
-        return render_template("index.html")
-    if session["role"]=="security":
-        return render_template("security.html")
-    return redirect("/parent_ai")
-
-app.run(debug=True)
+app.run(debug=True) 

@@ -1,22 +1,29 @@
 import cv2
 import os
 
-video_path = "myvideo.mp4"     # Your MP4 file
-output_folder = "videos/cam4" # Or cam1 / cam2 / cam3
+# Add all cameras here
+videos = {
+    "cam4": "videos/cam4/video.mp4",
+    "cam5": "videos/cam5/Indoor.mp4",
+    "cam6": "videos/cam6/MallVideo.mp4",
+    "cam7": "videos/cam7/playground.mp4"
+}
 
-os.makedirs(output_folder, exist_ok=True)
+for cam, video_path in videos.items():
+    output_folder = f"videos/{cam}"
+    os.makedirs(output_folder, exist_ok=True)
 
-cap = cv2.VideoCapture(video_path)
-count = 1
+    cap = cv2.VideoCapture(video_path)
+    count = 1
 
-while True:
-    success, frame = cap.read()
-    if not success:
-        break
+    while True:
+        success, frame = cap.read()
+        if not success:
+            break
 
-    filename = f"{count:06d}.jpg"
-    cv2.imwrite(os.path.join(output_folder, filename), frame)
-    count += 1
+        filename = f"{count:06d}.jpg"
+        cv2.imwrite(os.path.join(output_folder, filename), frame)
+        count += 1
 
-cap.release()
-print("Total frames extracted:", count)
+    cap.release()
+    print(f"{cam} → Total frames extracted: {count}")

@@ -1,116 +1,781 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 <title>GuardianVision – Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body{margin:0;font-family:Segoe UI;background:#eef2f8;}
-.app{display:grid;grid-template-columns:240px 1fr;grid-template-rows:60px 1fr;height:100vh;}
-.sidebar{grid-row:1/span 2;background:#050b1f;color:white;padding:20px;}
-.sidebar h2{color:#00f2ff;margin-bottom:30px;}
-.sidebar a{display:block;padding:12px;color:white;text-decoration:none;cursor:pointer;}
-.sidebar a:hover{color:#00f2ff;}
-.topbar{background:#0a1230;color:white;display:flex;justify-content:space-between;align-items:center;padding:0 20px;}
-.main{padding:20px;}
-.cards{display:flex;gap:20px;}
-.card{flex:1;background:white;padding:20px;border-radius:10px;text-align:center;}
-.page{display:none;}
+body{
+    margin:0;
+    font-family:'Poppins',sans-serif;
+    background:#0b1023;
+    color:white;
+}
+
+/* GRID */
+.app{
+    display:grid;
+    grid-template-columns:240px 1fr;
+    grid-template-rows:60px 1fr;
+    height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+    grid-row:1/span 2;
+    background:#0f1735;
+    padding:25px;
+}
+
+.sidebar h2{
+    color:#00f2ff;
+    margin-bottom:30px;
+}
+
+.sidebar a{
+    display:block;
+    padding:12px;
+    color:#aaa;
+    text-decoration:none;
+    border-radius:8px;
+    transition:0.3s;
+}
+
+.sidebar a:hover{
+    background:#1a2347;
+    color:#00f2ff;
+}
+
+/* TOPBAR */
+.topbar{
+    background:linear-gradient(90deg,#0f1735,#121933);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 25px;
+}
+
+/* CAMERA */
+.camera-box select{
+    padding:6px 10px;
+    border-radius:6px;
+    border:none;
+}
+
+/* LOGOUT */
+.logout-btn{
+    background:#ff4d4d;
+    padding:8px 18px;
+    border-radius:10px;
+    color:white;
+    text-decoration:none;
+    transition:0.3s;
+}
+
+.logout-btn:hover{
+    background:#e60000;
+}
+
+/* MAIN */
+.main{
+    padding:25px;
+}
+
+/* CARDS */
+.cards{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+}
+
+.card{
+    background:rgba(255,255,255,0.05);
+    padding:25px;
+    border-radius:20px;
+    backdrop-filter:blur(10px);
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    transition:0.3s;
+}
+
+.card:hover{
+    transform:translateY(-5px);
+}
+
+.card h3{
+    color:#aaa;
+}
+
+.card h1{
+    font-size:40px;
+    margin-top:10px;
+}
+
+/* TABLE */
+table{
+    width:100%;
+    background:rgba(255,255,255,0.05);
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th{
+    background:#121933;
+    color:#00f2ff;
+}
+
+td{
+    padding:10px;
+}
+
+/* CHARTS */
+.charts{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(350px,1fr));
+    gap:20px;
+    margin-top:20px;
+}
+
+.chart-box{
+    background:rgba(255,255,255,0.05);
+    padding:20px;
+    border-radius:15px;
+    backdrop-filter:blur(10px);
+}
+.sidebar a.active{
+    background:#1a2347;
+    color:#00f2ff;
+}
+.page{
+    display:none;
+}
+.page.active-page{
+    display:block;
+}
+/* LIVE HEADER */
+.live-header{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+  align-items:center;
+}
+
+.live-badge{
+  background:#ff4d4d;
+  padding:5px 10px;
+  border-radius:8px;
+  font-size:12px;
+}
+
+.ai-badge{
+  background:#00ff9f;
+  color:black;
+  padding:5px 10px;
+  border-radius:8px;
+  font-size:12px;
+}
+
+.cam-name{
+  background:#121933;
+  padding:5px 10px;
+  border-radius:8px;
+}
+
+/* VIDEO */
+.video-container{
+  position:relative;
+  border-radius:15px;
+  overflow:hidden;
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);
+  border:2px solid rgba(0,255,255,0.2);
+}
+
+.video-container img{
+  width:100%;
+  border-radius:15px;
+}
+
+/* CONTROLS */
+.controls{
+  position:absolute;
+  bottom:10px;
+  right:10px;
+  display:flex;
+  gap:10px;
+}
+
+.controls button{
+  background:rgba(0,0,0,0.6);
+  color:white;
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+/* SEARCH */
+.alert-top{
+  margin-bottom:15px;
+}
+
+.alert-top input{
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  width:250px;
+}
+
+/* TABLE */
+.table-container{
+  max-height:400px;
+  overflow-y:auto;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#121933;
+}
+
+thead{
+  position:sticky;
+  top:0;
+  background:#0a1230;
+}
+
+th{
+  color:#00f2ff;
+  padding:12px;
+}
+
+td{
+  padding:12px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+/* DANGER ROW */
+.danger-row{
+  background:rgba(255,0,0,0.15);
+}
+
+/* BADGE */
+.badge{
+  padding:5px 10px;
+  border-radius:8px;
+  font-size:12px;
+}
+
+.badge-danger{
+  background:#ff4d4d;
+}
+
+.badge-safe{
+  background:#00ff9f;
+  color:black;
+}
+.badge-warning{
+  background:#ffcc00;
+  color:black;
+}
+.page{
+    display:none;
+    opacity:0;
+    transform:translateY(10px);
+    transition:0.4s ease;
+}
+
+.page.active-page{
+    display:block;
+    opacity:1;
+    transform:translateY(0);
+}
+.sidebar a{
+    position:relative;
+    transition:0.3s;
+}
+
+.sidebar a:hover{
+    background:#1a2347;
+    color:#00f2ff;
+    box-shadow:0 0 10px #00f2ff44;
+}
+.sidebar.collapsed{
+    width:70px;
+}
+
+.sidebar.collapsed h2{
+    display:none;
+}
+
+.sidebar.collapsed a{
+    text-align:center;
+    font-size:18px;
+}
+.sidebar a{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
 </style>
 </head>
 
 <body>
+
+ <div id="dangerPopup" style="
+position:fixed;
+bottom:20px;
+right:20px;
+background:#ff4d4d;
+color:white;
+padding:15px 20px;
+border-radius:10px;
+display:none;
+z-index:999;">
+⚠ Child in Danger Zone!
+</div>
+<div id="alertPopup" style="
+position:fixed;
+top:20px;
+right:20px;
+background:#ff4d4d;
+color:white;
+padding:15px 20px;
+border-radius:12px;
+display:none;
+z-index:999;
+box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+🚨 Child in Danger!
+</div>
+
 <div class="app">
 
+<!-- Sidebar -->
 <div class="sidebar">
 <h2>GuardianVision</h2>
-<a onclick="showPage('dashboard')">Dashboard</a>
-<a onclick="showPage('live')">Live Monitoring</a>
-<a onclick="showPage('alerts')">Alerts</a>
-<a onclick="showPage('reports')">Reports</a>
-<a href="/admin_parents">Parent Approvals</a>
 
+<a onclick="showPage('dashboard', this)" class="active">📊Dashboard</a>
+<a onclick="showPage('live', this)">📡Live Monitoring</a>
+<a onclick="showPage('alerts', this)">🚨Alerts</a>
+<a onclick="showPage('reports', this)">📈Reports</a>
+<a href="/admin_parents">👨‍👩‍👧 Parent Approvals</a>
 
 </div>
 
+<!-- Topbar -->
 <div class="topbar">
-<div>
-Camera:
+
+<div class="camera-box">
+<span>Camera:</span>
+
 <select id="camera" onchange="reloadCamera()">
 <option value="cam1">CAM1</option>
 <option value="cam2">CAM2</option>
 <option value="cam3">CAM3</option>
 <option value="cam4">CAM4</option>
+<option value="cam5">CAM5</option>
+<option value="cam6">CAM6</option>
+<option value="cam7">CAM7</option>
 </select>
 </div>
-<a href="/logout" style="color:#00f2ff">Logout</a>
+<button onclick="toggleSidebar()" style="background:none;border:none;color:white;font-size:20px;">☰</button>
+
+<a href="/logout" class="logout-btn">🚪 Logout</a>
+
 </div>
 
+
+<!-- Main -->
 <div class="main">
 
-<div id="dashboard" class="page" style="display:block">
+<!-- Dashboard -->
+<div id="dashboard" class="page" >
 <div class="cards">
-<div class="card"><h3>Total Kids</h3><h1 id="total">0</h1></div>
-<div class="card"><h3>Safe Kids</h3><h1 id="safe">0</h1></div>
-<div class="card"><h3>Danger Kids</h3><h1 id="danger">0</h1></div>
+<div class="card" style="border-left:5px solid #00f2ff;">
+<h3>Total Kids</h3>
+<h1 id="total">0</h1>
+</div>
+<div class="card" style="border-left:5px solid #00ff9f;">
+<h3>Safe Kids</h3>
+<h1 id="safe">0</h1>
+</div>
+
+<div class="card" style="border-left:5px solid red;">
+<h3>Danger Kids</h3>
+<h1 id="danger">0</h1>
+</div>
 </div>
 </div>
 
+<!-- Live -->
 <div id="live" class="page">
-<img id="feed" width="100%">
+
+<div class="live-header">
+  <span class="live-badge">🔴 LIVE</span>
+  <span class="ai-badge">🤖 AI ACTIVE</span>
+  <span class="cam-name" id="camLabel">CAM1</span>
 </div>
 
+<div class="video-container">
+
+  <img id="feed">
+
+  <div class="controls">
+    <button onclick="reloadCamera()">🔄</button>
+    <button onclick="toggleFull()">⛶</button>
+  </div>
+
+</div>
+
+</div>
+
+<!-- Alerts -->
 <div id="alerts" class="page">
-<table width="100%" border="1">
-<tr><th>Time</th><th>Child</th><th>Event</th></tr>
+
+<div class="alert-top">
+  <input type="text" id="alertSearch" placeholder="🔍 Search alerts...">
+</div>
+
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>⏱ Time</th>
+<th>🧒 Child</th>
+<th>⚠ Event</th>
+<th>🧠 Severity</th>
+</tr>
+</thead>
+
 <tbody id="alertBody"></tbody>
+
 </table>
 </div>
 
+</div>
+
+<!-- Reports -->
 <div id="reports" class="page">
-<canvas id="chart"></canvas>
+
+<div class="charts">
+
+<div class="chart-box">
+<h3>📊 Safety Distribution</h3>
+<canvas id="pieChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>🔥 Activity Intensity</h3>
+<canvas id="activityChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>📉 Camera Comparison</h3>
+<canvas id="barChart"></canvas>
+</div>
+<div class="chart-box">
+<h3>🚨 Alert Trends</h3>
+<canvas id="alertTrend"></canvas>
+</div>
+<div class="chart-box">
+<h3>🧠 Risk Score</h3>
+<h1 id="riskScore">0%</h1>
 </div>
 
 </div>
-</div>
 
+</div>
 <script>
-let currentCamera="cam1", chart;
+let alertTrendChart;
 
-function showPage(p){
-document.querySelectorAll(".page").forEach(x=>x.style.display="none");
-document.getElementById(p).style.display="block";
+function loadAlertAnalytics(){
+    console.log("Alert Analytics Running");
+
+    fetch("/alert_table?cam="+currentCamera)
+    .then(r=>r.json())
+    .then(d=>{
+
+        let lastData = d.data.slice(-15);
+
+        let labels = lastData.map((_,i)=>"T"+(i+1));
+        let values = lastData.map(a => a.type === "Danger" ? 1 : 0);
+
+        // 🔥 FIX 1: If no data
+        if(values.length === 0){
+            labels = ["No Data"];
+            values = [0];
+        }
+
+        // 🔥 FIX 2: If all zero → show minimal line
+        if(values.every(v => v === 0)){
+            values[values.length - 1] = 0.1;
+        }
+
+        if(alertTrendChart) alertTrendChart.destroy();
+
+        alertTrendChart = new Chart(document.getElementById("alertTrend"),{
+            type:"line",
+            data:{
+                labels:labels,
+                datasets:[{
+                    label:"Danger Events",
+                    data:values,
+                    borderColor:"#ff4d4d",
+                    backgroundColor:"rgba(255,77,77,0.2)",
+                    fill:true,
+                    tension:0.4,
+                    pointRadius:4
+                }]
+            },
+            options:{
+                animation:{
+                    duration:1000
+                },
+                scales:{
+                    y:{
+                        beginAtZero:true,
+                        ticks:{color:"white"}
+                    },
+                    x:{
+                        ticks:{color:"white"}
+                    }
+                },
+                plugins:{
+                    legend:{
+                        labels:{color:"white"}
+                    }
+                }
+            }
+        });
+
+    });
 }
+let currentCamera="cam1", pieChart, activityChart, barChart;
 
+function showPage(page, el){
+
+    // Remove active class from all pages
+    document.querySelectorAll(".page").forEach(p=>{
+        p.classList.remove("active-page");
+    });
+
+    // Show selected page
+    document.getElementById(page).classList.add("active-page");
+
+    // Sidebar active
+    document.querySelectorAll(".sidebar a").forEach(a=>a.classList.remove("active"));
+    if(el) el.classList.add("active");
+
+    if(page === "live"){
+        reloadCamera();
+    }
+}
 function reloadCamera(){
-currentCamera=document.getElementById("camera").value;
-document.getElementById("feed").src="/cctv?cam="+currentCamera+"&t="+Date.now();
+    currentCamera=document.getElementById("camera").value;
+
+    document.getElementById("feed").src =
+        "/cctv?cam="+currentCamera+"&t="+Date.now();
+
+    document.getElementById("camLabel").innerText =
+        currentCamera.toUpperCase();
 }
 
+/* FULLSCREEN */
+function toggleFull(){
+    let elem = document.querySelector(".video-container");
+
+    if (!document.fullscreenElement) {
+        elem.requestFullscreen();
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+// Initial load
 document.getElementById("feed").src="/cctv?cam=cam1";
 
 function loadStats(){
-fetch("/stats?cam="+currentCamera).then(r=>r.json()).then(d=>{
-total.innerText=d.total;
-safe.innerText=d.safe;
-danger.innerText=d.danger;
+    fetch("/stats?cam="+currentCamera)
+    .then(r=>r.json())
+    .then(d=>{
 
-if(chart) chart.destroy();
-chart=new Chart(document.getElementById("chart"),{
-type:"doughnut",
-data:{labels:["Safe","Danger"],datasets:[{data:[d.safe,d.danger]}]}
+        // ✅ ALWAYS update dashboard cards
+        document.getElementById("total").innerText = d.total;
+        document.getElementById("safe").innerText = d.safe;
+        document.getElementById("danger").innerText = d.danger;
+        let risk = Math.min(100, (d.danger || 0) * 20);
+        document.getElementById("riskScore").innerText = risk + "%";
+        
+
+
+        // ✅ 🔥 SHOW DANGER POPUP
+        if(d.danger > 0){
+            showDanger();
+        }
+
+        // ✅ CHECK IF REPORT PAGE IS ACTIVE
+        let reportsPage = document.getElementById("reports");
+        if(!document.getElementById("reports").classList.contains("active-page")) return;
+        // ================= CHARTS =================
+
+        // PIE
+       // PIE FIX
+       if(pieChart) pieChart.destroy();
+       let safe = Number(d.safe) || 0;
+       let danger = Number(d.danger) || 0;
+       // 🔥 Prevent empty chart
+       if(safe === 0 && danger === 0){
+         safe = 1;
+        }
+        pieChart = new Chart(document.getElementById("pieChart"),{
+            type:"doughnut",
+            data:{
+        labels:["Safe","Danger"],
+        datasets:[{
+            data:[safe, danger],
+            backgroundColor:["#00cfff","#ff4d6d"]
+        }]
+    },
+    options:{
+        plugins:{
+            legend:{
+                labels:{color:"white"}
+            }
+        }
+    }
 });
+
+        // ACTIVITY
+        if(activityChart) activityChart.destroy();
+       activityChart = new Chart(document.getElementById("activityChart"),{
+    type:"bar",
+    data:{
+        labels:["Zone A","Zone B","Zone C","Zone D","Zone E"],
+        datasets:[{
+            label:"Activity",
+            data:[
+                d.total || 0,
+                d.safe || 0,
+                d.danger + 2 || 0,
+                d.safe + 1 || 0,
+                d.danger || 0
+            ],
+            backgroundColor:[
+                "#36a2eb",
+                "#4bc0c0",
+                "#ff6384",
+                "#9966ff",
+                "#ff9f40"
+            ]
+        }]
+    }
 });
+        if(document.getElementById("reports").classList.contains("active-page")){
+    loadAlertAnalytics();
 }
 
+
+        // BAR
+        if(barChart) barChart.destroy();
+        barChart = new Chart(document.getElementById("barChart"),{
+            type:"bar",
+            data:{
+                labels:["CAM1","CAM2","CAM3","CAM4","CAM5","CAM6","CAM7"],
+                datasets:[{
+                    label:"Danger",
+                    data:[2,3,1,d.danger]
+                }]
+            }
+        });
+        
+
+    });
+}
 function loadAlerts(){
-fetch("/alert_table?cam="+currentCamera).then(r=>r.json()).then(d=>{
-alertBody.innerHTML=d.data.map(a=>`<tr><td>${a.time}</td><td>${a.child}</td><td>${a.type}</td></tr>`).join("");
-});
-}
+    fetch("/alert_table?cam="+currentCamera)
+    .then(r=>r.json())
+    .then(d=>{
 
+        let dangerCount = 0;
+
+        let html = d.data.map(a=>{
+
+            let isDanger = a.type === "Danger";
+
+            if(isDanger){
+                dangerCount++;
+                if(!window.lastAlert || Date.now() - window.lastAlert > 5000){
+                     showAlertPopup(a.child);
+                     window.lastAlert = Date.now();
+}   // 🔔 popup
+            }
+
+            // 🧠 AI Severity Logic
+            let severity = "Low";
+            if(dangerCount > 3) severity = "Medium";
+            if(dangerCount > 6) severity = "High";
+
+            let severityClass =
+                severity === "High" ? "badge-danger" :
+                severity === "Medium" ? "badge-warning" :
+                "badge-safe";
+
+            return `
+            <tr class="${isDanger ? 'danger-row' : ''}">
+                <td>${a.time}</td>
+                <td>Child ${a.child}</td>
+                <td>
+                  <span class="badge ${isDanger ? 'badge-danger':'badge-safe'}">
+                    ${a.type}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge ${severityClass}">
+                    ${severity}
+                  </span>
+                </td>
+            </tr>
+            `;
+        }).join("");
+
+        document.getElementById("alertBody").innerHTML = html;
+
+        // 🔥 Auto scroll
+        let container = document.querySelector(".table-container");
+        container.scrollTop = container.scrollHeight;
+    });
+}
+function showAlertPopup(child){
+    let p = document.getElementById("alertPopup");
+    p.innerText = `🚨 Child ${child} in Danger!`;
+    p.style.display = "block";
+
+    setTimeout(()=>p.style.display="none",3000);
+}
+function showDanger(){
+    let p = document.getElementById("dangerPopup");
+    p.style.display = "block";
+
+    setTimeout(()=>{
+        p.style.display = "none";
+    },3000);
+}
+document.getElementById("alertSearch").addEventListener("input",function(){
+    let val = this.value.toLowerCase();
+
+    document.querySelectorAll("#alertBody tr").forEach(row=>{
+        row.style.display =
+            row.innerText.toLowerCase().includes(val) ? "" : "none";
+    });
+});
+
+setTimeout(()=>{
+    loadAlertAnalytics();
+},1000);
 setInterval(loadStats,2000);
 setInterval(loadAlerts,3000);
-loadStats(); loadAlerts();
+loadAlerts();
+showPage('dashboard', document.querySelector(".sidebar a"));
 </script>
 
 </body>
