@@ -317,6 +317,18 @@ td{
     align-items:center;
     gap:10px;
 }
+.page{
+    display:none;
+    opacity:0;
+    transform:translateY(10px);
+    transition:0.4s;
+}
+
+.active-page{
+    display:block;
+    opacity:1;
+    transform:translateY(0);
+}
 </style>
 </head>
 
@@ -359,6 +371,7 @@ box-shadow:0 10px 30px rgba(0,0,0,0.5);">
 <a onclick="showPage('alerts', this)">🚨Alerts</a>
 <a onclick="showPage('reports', this)">📈Reports</a>
 <a href="/admin_parents">👨‍👩‍👧 Parent Approvals</a>
+<a onclick="showPage('accuracy')">📊 Accuracy</a>
 
 </div>
 
@@ -485,7 +498,80 @@ box-shadow:0 10px 30px rgba(0,0,0,0.5);">
 </div>
 
 </div>
+<!-------Accuracyyy-------->
+<div id="accuracy" class="page">
+
+<div class="charts">
+
+<div class="chart-box">
+<h3>📈 Accuracy Trend</h3>
+<canvas id="accuracyChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>📋 Confusion Matrix</h3>
+<canvas id="confusionChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>⚡ Live Accuracy</h3>
+<h1 id="liveAccuracy">0%</h1>
+</div>
+
+</div>
+
+</div>
 <script>
+
+    let accuracyChart, confusionChart;
+
+function loadAccuracy(){
+
+    fetch("/accuracy_data")
+    .then(r=>r.json())
+    .then(d=>{
+
+        // 🔥 LIVE ACCURACY
+        let acc = ((d.correct / d.total) * 100).toFixed(2);
+        document.getElementById("liveAccuracy").innerText = acc + "%";
+
+        // 📈 ACCURACY TREND
+        if(accuracyChart) accuracyChart.destroy();
+        accuracyChart = new Chart(document.getElementById("accuracyChart"),{
+            type:"line",
+            data:{
+                labels:d.labels,
+                datasets:[{
+                    label:"Accuracy %",
+                    data:d.values,
+                    borderColor:"#00f2ff",
+                    fill:true,
+                    tension:0.4
+                }]
+            }
+        });
+
+        // 📋 CONFUSION MATRIX
+        if(confusionChart) confusionChart.destroy();
+        confusionChart = new Chart(document.getElementById("confusionChart"),{
+            type:"bar",
+            data:{
+                labels:["TP","FP","FN","TN"],
+                datasets:[{
+                    label:"Count",
+                    data:[d.tp, d.fp, d.fn, d.tn],
+                    backgroundColor:[
+                        "#00ff9f",
+                        "#ff4d4d",
+                        "#ffcc00",
+                        "#36a2eb"
+                    ]
+                }]
+            }
+        });
+
+    });
+}
 let alertTrendChart;
 
 function loadAlertAnalytics(){
@@ -554,23 +640,44 @@ let currentCamera="cam1", pieChart, activityChart, barChart;
 
 function showPage(page, el){
 
-    // Remove active class from all pages
+    // 🔹 Hide all pages
     document.querySelectorAll(".page").forEach(p=>{
         p.classList.remove("active-page");
     });
 
-    // Show selected page
-    document.getElementById(page).classList.add("active-page");
+    // 🔹 Show selected page
+    let currentPage = document.getElementById(page);
+    if(currentPage){
+        currentPage.classList.add("active-page");
+    }
 
-    // Sidebar active
+    // 🔹 Sidebar active highlight
     document.querySelectorAll(".sidebar a").forEach(a=>a.classList.remove("active"));
     if(el) el.classList.add("active");
 
+    // ================= PAGE-SPECIFIC LOGIC =================
+
+    // 📡 Live Monitoring
     if(page === "live"){
         reloadCamera();
     }
-}
-function reloadCamera(){
+
+    // 🚨 Alerts
+    if(page === "alerts"){
+        loadAlerts();
+    }
+
+    // 📊 Reports
+    if(page === "reports"){
+        loadStats();              // charts
+        loadAlertAnalytics();     // trends
+    }
+
+    // 📈 NEW: Accuracy Page 🔥
+    if(page === "accuracy"){
+        loadAccuracy();
+    }
+}function reloadCamera(){
     currentCamera=document.getElementById("camera").value;
 
     document.getElementById("feed").src =

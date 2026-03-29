@@ -9,6 +9,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask import session
 
+
 app = Flask(__name__)
 app.secret_key = "guardianvision"
 
@@ -445,7 +446,7 @@ def register():
             db.commit()
 
             # 📧 send mail
-            verify_link = f"http://127.0.0.1:5000/verify/{token}"
+            verify_link = f"https://superimproved-chargeable-bertram.ngrok-free.dev/verify/{token}"
 
             msg = f"""Subject: GuardianVision Email Verification
 
@@ -455,7 +456,7 @@ Click the link below to verify your account:
 
 {verify_link}
 
-If you did not request this, ignore.
+If you did not request this, ignore.`
 """
 
             server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
@@ -618,7 +619,32 @@ def delete_user(uid):
 
     return redirect("/admin_parents")
 
+from flask import jsonify
+import random
 
+@app.route('/accuracy_data')
+def accuracy_data():
+
+    # 🔥 dummy data (replace later with real)
+    correct = random.randint(80,100)
+    total = 100
+
+    data = {
+        "correct": correct,
+        "total": total,
+
+        # Trend graph
+        "labels": ["1","2","3","4","5"],
+        "values": [85,88,90,91,correct],
+
+        # Confusion matrix
+        "tp": random.randint(70,90),
+        "fp": random.randint(5,15),
+        "fn": random.randint(3,10),
+        "tn": random.randint(80,95)
+    }
+
+    return jsonify(data)
 
 @app.route("/login", methods=["GET","POST"])
 def login():
@@ -769,4 +795,4 @@ def logout():
     session.clear()
     return redirect("/login")
 
-app.run(debug=True) 
+app.run(host="0.0.0.0", port=5000, debug=True)

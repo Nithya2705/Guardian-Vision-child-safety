@@ -14,6 +14,7 @@ for cam, video_path in videos.items():
     os.makedirs(output_folder, exist_ok=True)
 
     cap = cv2.VideoCapture(video_path)
+    
     count = 1
 
     while True:
